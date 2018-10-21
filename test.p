@@ -4,6 +4,11 @@
 
 const AMMO = 99999;
 
+main()
+{
+	//code
+}
+
 public OnPlayerSpawn(playerid)
 {
 	SetPlayerPos(playerid, 1360.5299, -24.5914, 1000.9219);
