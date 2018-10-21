@@ -71,3 +71,4 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 #define OnPlayerConnect DS_OnPlayerConnect
 //================================================
 #endif /* FIN _INC_antilag */
+ 
