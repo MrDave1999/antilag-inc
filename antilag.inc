@@ -2,10 +2,17 @@
 	#define _INC_antilag
 
 #define SetPlayerAntiLag(%0,%1) \
-	AntiLag[%0] = (%1)
-	
+	a_Data[%0][AntiLag] = (%1)
+
 #define IsPlayerAntiLag(%0) \
-	(AntiLag[%0])
+	(a_Data[%0][AntiLag])
+	
+#define TogglePlayerAntiLag(%0) \
+	(a_Data[%0][AntiLag] = !a_Data[%0][AntiLag])
+	
+#define SetAllPlayersAntiLag(%0) for (new i = 0; i < MAX_PLAYERS; ++i) if (IsPlayerConnected(i)) if (!IsPlayerNPC(i)) SetPlayerAntiLag(i, %0)
+
+#define ToggleAllPlayersAntiLag() for (new i = 0; i < MAX_PLAYERS; ++i) if (IsPlayerConnected(i)) if (!IsPlayerNPC(i)) TogglePlayerAntiLag(i)
 
 #if defined DS_OnPlayerGiveDamage
 	forward DS_OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart);
@@ -15,7 +22,13 @@
 	forward DS_OnPlayerConnect(playerid);
 #endif
 
-new bool:AntiLag[MAX_PLAYERS];
+enum aStruct
+{
+	bool:AntiLag,
+	float:Armour,
+	float:Health
+};
+new a_Data[MAX_PLAYERS][aStruct];
 
 public OnPlayerConnect(playerid)
 {
@@ -28,24 +41,41 @@ public OnPlayerConnect(playerid)
 	#endif
 }
 
+public OnPlayerSpawn(playerid)
+{
+    a_Data[playerid][Armour] = 100.0;
+    a_Data[playerid][Health] = 100.0;
+    SetPlayerArmour(playerid, a_Data[damagedid][Armour]);
+    SetPlayerHealth(playerid, a_Data[damagedid][Health]);
+}
+
 public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 {
-	//printf("DEBUG: hook de OnPlayerGiveDamage (antilag.inc)");
 	if(IsPlayerAntiLag(playerid))
 	{
-		new Float:armour;
-		GetPlayerArmour(damagedid, armour);
-		if(armour > 0)
+		new float:cArmour;
+		GetPlayerArmour(damagedid, cArmour);
+		if (cArmour != a_Data[damagedid][Armour]) SetPlayerArmour(damagedid, a_Data[damagedid][Armour]);
+		
+		if(a_Data[damagedid][Armour] > 0)
 		{
-	    	SetPlayerArmour(damagedid, ((armour > amount) ? (armour-amount) : (0.0)));
-			if(armour < amount)
-				SetPlayerHealth(damagedid, 100.0-(amount-armour));
+	    	a_Data[damagedid][Armour] = ((a_Data[damagedid][Armour] > amount) ? (a_Data[damagedid][Armour] - amount) : (0.0));
+	    	
+	    	SetPlayerArmour(damagedid, a_Data[damagedid][Armour]);
+	    	
+			if(a_Data[damagedid][Armour] < amount)
+				a_Data[damagedid][Health] = 100.0 - (amount - a_Data[damagedid][Armour]);
+				SetPlayerHealth(damagedid, a_Data[damagedid][Health]);
 		}
 		else
 		{
-			new Float:health;
-			GetPlayerHealth(damagedid, health);
-			SetPlayerHealth(damagedid, ((health > amount) ? (health-amount) : (0.0)));
+			new Float:cHealth;
+			GetPlayerHealth(damagedid, cHealth);
+			
+			if (cHealth != a_Data[damagedid][Health]) SetPlayerHealth(damagedid, a_Data[damagedid][Health]);
+			
+			a_Data[damagedid][Health] = ((a_Data[damagedid][Health] > amount) ? (a_Data[damagedid][Health] - amount) : (0.0));
+			SetPlayerHealth(damagedid, a_Data[damagedid][Health]);
 		}
 	}
 	#if !defined DS_OnPlayerGiveDamage
@@ -71,4 +101,3 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 #define OnPlayerConnect DS_OnPlayerConnect
 //================================================
 #endif /* FIN _INC_antilag */
- 
